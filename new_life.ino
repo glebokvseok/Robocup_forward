@@ -12,6 +12,7 @@ long long int switch_update_timer = 0;
 bool line_catched = false;
 bool alpha_update = true;
 bool switched_goals = false;
+bool mirror_exist = false;
 
 double angle = 0;
 double enemy_angle = 0;
@@ -20,6 +21,8 @@ double home_angle = 0;
 double line_angle = 0;
 double alpha1 = -1.0;
 double alpha2 = -1.0;
+double alpha1_mir = -1.0;
+double alpha2_mir = -1.0;
 
 double current_angle = 0;
 short speed = 120;
