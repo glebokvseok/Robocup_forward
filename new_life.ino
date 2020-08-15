@@ -6,16 +6,21 @@ Math math;
 const double epsilon = pow(10, -6);
 
 long long int timer = 0;
+long long int line_timer = 0;
 long long int alpha_update_timer = 0;
 long long int switch_update_timer = 0;
 
 bool line_catched = false;
+bool mirror_line_catched = false;
 bool alpha_update = true;
 bool switched_goals = false;
+bool mirror_exist = false;
 
 double line_angle = 0;
 double alpha1 = -1.0;
 double alpha2 = -1.0;
+double alpha1_mir = -1.0;
+double alpha2_mir = -1.0;
 
 double current_angle = 0;
 short speed = 120;
@@ -86,6 +91,9 @@ void loop() {
     if (robot.buttonPressed(0))
         target = robot.degree;
 
+    if (robot.buttonPressed(1))
+        speed = 210;
+
     if (robot.buttonPressed(0) && robot.buttonPressed(1) && robot.setTimer(switch_update_timer, 5000)) {
         switched_goals = !switched_goals;
         switch_update_timer = millis();
@@ -97,11 +105,20 @@ void loop() {
     int err_old = err; 
     int led_coef;
 
+    if (!ball.found && home.found ) {
+        current_angle = home.angle;
+        if (home.distance > 500) {
+            speed = 180;
+        } else {
+            speed = 0;
+        }
+    }
+
     if (!(abs(-1.0 - alpha1) > epsilon) && alpha_update) {
         alpha_update_timer = millis();
         alpha_update = true;
     } else {
-        alpha_update = robot.setTimer(alpha_update_timer, 200);
+        alpha_update = robot.setTimer(alpha_update_timer, 100);
     }
     
     if (alpha_update) 
@@ -113,56 +130,81 @@ void loop() {
             alpha2 = -1.0;
             
     if ((abs(-1.0 - alpha1) > epsilon) && (abs(-1.0 - alpha2) > epsilon)) {
-        int led_coef;
-        
-        if (abs(alpha1 - alpha2) < PI) 
-            led_coef = 1;
-        else
-            led_coef = 0;
+        if (!mirror_exist) {
+            int led_coef;
             
-        if (home.found && enemy.found) {
-            line_angle = (enemy.distance > home.distance) ? enemy.angle : home.angle;
-        } else if (home.found) {
-            line_angle = home.angle;
-        } else {
-            line_angle = (alpha1 + alpha2) / 2 + math.radian(180) * led_coef;
-        }
-            line_catched = true;
-    } 
-    
-    if (!ball.found && home.found ) {
-        current_angle = home.angle;
-        if (home.distance > 500) {
-            speed = 180;
-        } else {
-            speed = 0;
-        }
+            if (abs(alpha1 - alpha2) < PI) 
+                led_coef = 1;
+            else
+                led_coef = 0;
+                
+            if (home.found && enemy.found) {
+                line_angle = (enemy.distance > home.distance) ? enemy.angle : home.angle;
+            } else if (home.found) {
+                line_angle = home.angle;
+            } else {
+                line_angle = (alpha1 + alpha2) / 2 + math.radian(180) * led_coef;
+            }
+                line_catched = true;
+                alpha1_mir = (alpha1 >= PI) ? alpha1 - PI : alpha1 + PI;
+                alpha2_mir = (alpha2 >= PI) ? alpha2 - PI : alpha2 + PI;
+                mirror_exist = true;
+            }
     }
 
-    if (!line_catched) 
+    if ((abs(-1.0 - robot.updateLed()) > epsilon) && (robot.updateLed() >= min(alpha1_mir, alpha2_mir)) && (robot.updateLed() <= max(alpha1, alpha2)) && mirror_exist) {
+        mirror_line_catched = true;
+    }
+
+    if ((abs(-1.0 - robot.updateLed()) > epsilon)) {
+        line_catched = true;
+    } else {
+        line_catched = false;
+    }
+
+    if (line_catched) {
+        line_timer = millis();
+        speed = 100;
+    }
+
+    if (robot.setTimer(line_timer, 200)) {
+        alpha1 = -1.0;
+        alpha2 = -1.0;
+        alpha1_mir = -1.0;
+        alpha2_mir = -1.0;
+        line_catched = false;
+        mirror_exist = false;
+    }
+
+    if (!mirror_line_catched) 
         timer = millis();
     
-    if (line_catched) {
-        if (robot.setTimer(timer, 600)) {
+    if (mirror_line_catched) {
+        if (robot.setTimer(timer, 200)) {
             alpha1 = -1.0;
             alpha2 = -1.0;
-            line_catched = false;
+            mirror_line_catched = false;
         } else {
-            current_angle = line_angle; 
+            current_angle = line_angle;
+            speed = 100;
         }
     }
 
 //    if (enemy.distance  < 500)
 //        u = ((enemy.angle) + math.sign(enemy.angle) * math.radian(45)) * 10;
 
-    Serial.print(target);
+    Serial.print(line_catched);
     Serial.print(' ');
-    Serial.print(robot.degree);
+    Serial.print(mirror_line_catched);
     Serial.print(' ');
-    Serial.print(u);
+    Serial.print(current_angle);
+    Serial.print(' ');   
+    Serial.print(line_angle);
     Serial.print(' ');
-    Serial.print(robot.buttonPressed(1));
-    Serial.print(' ');    
+    Serial.print(home.angle);
+    Serial.print(' ');
+    Serial.print(enemy.angle);
+    Serial.print(' ');   
     Serial.println();
     
     robot.moveAngle(current_angle, speed, u);
