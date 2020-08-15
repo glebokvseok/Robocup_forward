@@ -7,24 +7,25 @@ const double epsilon = pow(10, -6);
 
 long long int timer = 0;
 long long int line_timer = 0;
-long long int alpha_update_timer = 0;
 long long int switch_update_timer = 0;
 
-bool line_catched = false;
-bool mirror_line_catched = false;
 bool alpha_update = true;
-bool switched_goals = false;
+bool line_catched = false;
 bool mirror_exist = false;
+bool switched_goals = false;
+bool mirror_line_catched = false;
 
-double line_angle = 0;
+double alpha = -1.0;
 double alpha1 = -1.0;
 double alpha2 = -1.0;
+double line_angle = 0;
+double current_angle = 0;
 double alpha1_mir = -1.0;
 double alpha2_mir = -1.0;
 
-double current_angle = 0;
+int target = 0;
 short speed = 120;
-int target;
+short counter = 0;
 
 void setup() {
     robot.init();
@@ -114,22 +115,41 @@ void loop() {
         }
     }
 
-    if (!(abs(-1.0 - alpha1) > epsilon) && alpha_update) {
-        alpha_update_timer = millis();
-        alpha_update = true;
-    } else {
-        alpha_update = robot.setTimer(alpha_update_timer, 100);
+    robot.updateLed(robot.led_value);
+    
+    for (int i = 0; i < 24; ++i) {
+        if (robot.led_value[i]) {
+            ++counter;
+        }
     }
-    
-    if (alpha_update) 
-        alpha1 = robot.updateLed();
-    
-    if ((abs(-1.0 - robot.updateLed()) > epsilon) && (abs(alpha1 - robot.updateLed()) > epsilon) && (abs(-1.0 - alpha1) > epsilon)) 
-            alpha2 = robot.updateLed();
-        else
-            alpha2 = -1.0;
+
+    if (counter >= 1) {
+        for (int i = 0; i < 24; ++i) {
+            if (robot.led_value[i]) {
+                alpha = robot.led_angle[i];
+                i = 24;
+            }
+        }
+    }
+
+    if (counter >= 2) {
+        for (int i = 0; i < 24; ++i) {
+            if (robot.led_value[i]) {
+                alpha1 = robot.led_angle[i];
+                robot.led_value[i] = false;
+                i = 24;
+            }
+        }
+        for (int i = 0; i < 24; ++i) {
+            if (robot.led_value[i]) {
+                alpha2 = robot.led_angle[i];
+                robot.led_value[i] = false;
+                i = 24;
+            }
+        }
+    }
             
-    if ((abs(-1.0 - alpha1) > epsilon) && (abs(-1.0 - alpha2) > epsilon)) {
+    if (counter >= 2) {
         if (!mirror_exist) {
             int led_coef;
             
@@ -142,21 +162,22 @@ void loop() {
                 line_angle = (enemy.distance > home.distance) ? enemy.angle : home.angle;
             } else if (home.found) {
                 line_angle = home.angle;
+            } else if (enemy.found) {
+                line_angle = home.angle;
             } else {
                 line_angle = (alpha1 + alpha2) / 2 + math.radian(180) * led_coef;
             }
-                line_catched = true;
-                alpha1_mir = (alpha1 >= PI) ? alpha1 - PI : alpha1 + PI;
-                alpha2_mir = (alpha2 >= PI) ? alpha2 - PI : alpha2 + PI;
-                mirror_exist = true;
-            }
+            alpha1_mir = (alpha1 >= PI) ? alpha1 - PI : alpha1 + PI;
+            alpha2_mir = (alpha2 >= PI) ? alpha2 - PI : alpha2 + PI;
+            mirror_exist = true;
+        }
     }
 
-    if ((abs(-1.0 - robot.updateLed()) > epsilon) && (robot.updateLed() >= min(alpha1_mir, alpha2_mir)) && (robot.updateLed() <= max(alpha1, alpha2)) && mirror_exist) {
+    if ((abs(-1.0 - alpha) > epsilon) && (alpha >= min(alpha1_mir, alpha2_mir)) && (alpha <= max(alpha1, alpha2)) && mirror_exist) {
         mirror_line_catched = true;
     }
 
-    if ((abs(-1.0 - robot.updateLed()) > epsilon)) {
+    if ((abs(-1.0 - alpha) > epsilon)) {
         line_catched = true;
     } else {
         line_catched = false;
@@ -167,27 +188,34 @@ void loop() {
         speed = 100;
     }
 
-    if (robot.setTimer(line_timer, 200)) {
+    if (robot.setTimer(line_timer, 400)) {
+        alpha = -1.0;
         alpha1 = -1.0;
         alpha2 = -1.0;
-        alpha1_mir = -1.0;
-        alpha2_mir = -1.0;
         line_catched = false;
         mirror_exist = false;
+        mirror_line_catched = false;
     }
 
     if (!mirror_line_catched) 
         timer = millis();
     
     if (mirror_line_catched) {
-        if (robot.setTimer(timer, 200)) {
+        if (robot.setTimer(timer, 400)) {
+            alpha = -1.0;
             alpha1 = -1.0;
             alpha2 = -1.0;
+            line_catched = false;
+            mirror_exist = false;
             mirror_line_catched = false;
         } else {
             current_angle = line_angle;
             speed = 100;
         }
+    }
+
+    for (int i = 0; i < 24; ++i) {
+        robot.led_value[i] = false;
     }
 
 //    if (enemy.distance  < 500)
