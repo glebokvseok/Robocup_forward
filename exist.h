@@ -46,7 +46,7 @@ class Robot {
     Pixy2 pixy;
 	public:
 		void init();
-		bool buttonPressed(char);
+		bool buttonPressed(byte n);
 		int readChannel(int n, int m);
 		double updateLed();
 		void runMotor(byte port, short speed);

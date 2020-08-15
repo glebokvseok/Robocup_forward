@@ -37,7 +37,7 @@ bool Robot::setTimer(long long timer, int dt) {
 }
 
 void Robot::init() {
-  Serial.begin(115200);
+    Serial.begin(115200);
     Serial3.begin(115200);
     delay(4000);     
     Serial3.write(0XA5);
@@ -49,8 +49,8 @@ void Robot::init() {
     pinMode(this->left_button_port, INPUT_PULLUP);
     pinMode(this->right_button_port, INPUT_PULLUP);
     for (int i = 0; i < 3; ++i) {
-      pinMode(this->led_digital_port[i], OUTPUT);
-    digitalWrite(this->led_digital_port[i], LOW);
+        pinMode(this->led_digital_port[i], OUTPUT);
+        digitalWrite(this->led_digital_port[i], LOW);
     }
     for (int i = 0; i < 4; ++i) {
         pinMode(this->motors_pwm[i], OUTPUT);
