@@ -12,7 +12,7 @@ int Math::sign(double x) {
 }
 
 double Math::radian(double angle) {
-    return angle * PI / 180;
+      return angle * PI / 180;
 }
 
 double Math::distance(int x, int y) {
@@ -37,7 +37,8 @@ bool Robot::setTimer(long long timer, int dt) {
 }
 
 void Robot::init() {
-  Serial.begin(115200);
+      Serial.begin(115200);
+    Serial1.begin(9600);
     Serial3.begin(115200);
     delay(4000);     
     Serial3.write(0XA5);
@@ -49,8 +50,8 @@ void Robot::init() {
     pinMode(this->left_button_port, INPUT_PULLUP);
     pinMode(this->right_button_port, INPUT_PULLUP);
     for (int i = 0; i < 3; ++i) {
-      pinMode(this->led_digital_port[i], OUTPUT);
-    digitalWrite(this->led_digital_port[i], LOW);
+        pinMode(this->led_digital_port[i], OUTPUT);
+        digitalWrite(this->led_digital_port[i], LOW);
     }
     for (int i = 0; i < 4; ++i) {
         pinMode(this->motors_pwm[i], OUTPUT);
@@ -75,11 +76,11 @@ bool Robot::buttonPressed(byte n) {
         button_port = this->left_button_port;
     if (n == 1)
         button_port = this->right_button_port;
-    return digitalRead(button_port) == 0;
+        return digitalRead(button_port) == 0;
 }
 
 int Robot::readChannel(int n, int m) {
-  int control_pins[3] = {33, 35, 37};
+    int control_pins[3] = {33, 35, 37};
     int signal[4] = {A3, A5, A7, A1}; 
     int channels[6][3] = { 
       {0, 0, 0},
