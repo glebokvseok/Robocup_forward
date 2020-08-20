@@ -6,7 +6,9 @@ Math math;
 const double epsilon = pow(10, -6);
 
 long long int timer = 0;
+long long delay_timer = 0;
 long long int line_timer = 0;
+long long int serial_timer = 0;
 long long int switch_update_timer = 0;
 
 bool alpha_update = true;
@@ -24,6 +26,7 @@ double alpha1_mir = -1.0;
 double alpha2_mir = -1.0;
 
 int target = 0;
+int extra_target = 0;
 short led_counter = 0;
 
 void setup() {
@@ -31,6 +34,7 @@ void setup() {
     robot.pixy.init();
     robot.updateGyro();
     target = robot.degree;
+    extra_target = target;
 }
 
 void loop() {
@@ -98,17 +102,20 @@ void loop() {
         switched_goals = !switched_goals;
         switch_update_timer = millis();
     }
-
+    
     robot.updateGyro();
     int err = target - robot.degree;
     int u = (int(err) - (int((err)) % 180) * 2);
     int err_old = err; 
     int led_coef;
 
+    
+    // u = (enemy.angle) / PI * 180;
+
     if (!ball.found) {
         if (home.found) {
             current_angle = home.angle;
-            if (home.distance > 400) {
+            if (home.distance > 250) {
                 speed = 180;
             } else {
                 speed = 0;
@@ -173,11 +180,11 @@ void loop() {
             alpha1_mir = (alpha1 >= PI) ? alpha1 - PI : alpha1 + PI;
             alpha2_mir = (alpha2 >= PI) ? alpha2 - PI : alpha2 + PI;
             if (alpha1_mir > alpha2_mir) {
-                alpha1_mir = (alpha1_mir + 5 * math.radian(15));
-                alpha2_mir = (alpha2_mir - 5 * math.radian(15));
+                alpha1_mir = (alpha1_mir + 4 * math.radian(15));
+                alpha2_mir = (alpha2_mir - 4 * math.radian(15));
             } else {
-                alpha1_mir = (alpha1_mir - 5 * math.radian(15));
-                alpha2_mir = (alpha2_mir + 5 * math.radian(15));
+                alpha1_mir = (alpha1_mir - 4 * math.radian(15));
+                alpha2_mir = (alpha2_mir + 4 * math.radian(15));
             }
             mirror_exist = true;
         }
@@ -196,10 +203,10 @@ void loop() {
 
     if (line_catched) {
         line_timer = millis();
-        speed = 85;
-    }
+        speed = 90;
+    } 
 
-    if (robot.setTimer(line_timer, 40)) {
+    if (robot.setTimer(line_timer, 50)) {
         alpha = -1.0;
         alpha1 = -1.0;
         alpha2 = -1.0;
@@ -208,11 +215,12 @@ void loop() {
         mirror_line_catched = false;
     }
 
-    if (!mirror_line_catched) 
+    if (!mirror_line_catched) {
         timer = millis();
+    }
     
     if (mirror_line_catched) {
-        if (robot.setTimer(timer, 800)) {
+        if (robot.setTimer(timer, 500)) {
 //            alpha = -1.0;
 //            alpha1 = -1.0;
 //            alpha2 = -1.0;
@@ -226,32 +234,30 @@ void loop() {
     }
     
     for (int i = 0; i < 24; ++i) {
-        Serial.print(robot.led_value[i]);
-        Serial.print(' ');
+//        Serial.print(robot.led_value[i]);
+//        Serial.print(' ');
         robot.led_value[i] = false;
     }
 
     led_counter = 0;
 
-    int mail = 12345;
-    char str[10] = "";
-    itoa(robot.degree, str, 10);
-    Serial1.write(str, 10);
-    delay(100);
-    
-//    if (enemy.distance  < 500)
-//        u = ((enemy.angle) + math.sign(enemy.angle) * math.radian(45)) * 10;
-    Serial.print(alpha1_mir / math.radian(15));
-    Serial.print(' ');
-    Serial.print(alpha2_mir / math.radian(15));
-    Serial.print(' ');   
-    Serial.print(alpha / math.radian(15));
-    Serial.print(' ');   
-    Serial.print(line_catched);
-    Serial.print(' ');
-    Serial.print(mirror_line_catched);
-    Serial.print(' ');   
-    Serial.println();
+    if (robot.setTimer(serial_timer, 50)) {
+        String mail = "";
+        mail = robot.createMail("u", double(u), mail);
+        mail = robot.createMail("current angle", current_angle, mail);
+        mail = robot.createMail("enemy angle", enemy.angle, mail);
+        mail = robot.createMail("enemy distance", enemy.distance, mail);
+        robot.sendMail(mail);
+        serial_timer = millis();
+    }
+            
+//    Serial.print(u);
+//    Serial.print(' ');
+//    Serial.print(enemy.angle);
+//    Serial.print(' ');
+//    Serial.print(enemy.distance);
+//    Serial.print(' ');    
+//    Serial.println();
     
     robot.moveAngle(current_angle, speed, u);
 }

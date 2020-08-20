@@ -70,6 +70,16 @@ void Robot::init() {
     this->led_angle[1] += 2 * PI;
 }
 
+String Robot::createMail(String name, double value, String str) {
+    str = str + name + " = " +  String(value) + "|";
+    return str;
+}
+
+void Robot::sendMail(String str) {
+    str += "!";
+    Serial1.print(str);
+}
+
 bool Robot::buttonPressed(byte n) {
     int button_port;
     if (n == 0)

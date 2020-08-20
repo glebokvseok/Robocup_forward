@@ -47,13 +47,15 @@ class Robot {
     public:
             void init();
         void updateGyro();
-            bool buttonPressed(byte n);
+        void sendMail(String str);
+        bool buttonPressed(byte n);
             int readChannel(int n, int m);
             bool updateLed(bool led_value[]);
             void runMotor(byte port, short speed);
         bool setTimer(long long timer, int dt);
         int updateCamera(int signature[], int n);
             void moveAngle(double angle, short speed, int u);
+        String createMail(String name, double value, String str);
 };
 
 #endif
