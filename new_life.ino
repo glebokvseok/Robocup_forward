@@ -4,6 +4,7 @@ Robot robot;
 Math math;
 
 const double epsilon = pow(10, -6);
+camera ball, home, enemy;
 
 long long int timer = 0;
 long long delay_timer = 0;
@@ -26,7 +27,6 @@ double alpha1_mir = -1.0;
 double alpha2_mir = -1.0;
 
 int target = 0;
-int extra_target = 0;
 short led_counter = 0;
 
 void setup() {
@@ -34,13 +34,10 @@ void setup() {
     robot.pixy.init();
     robot.updateGyro();
     target = robot.degree;
-    extra_target = target;
 }
 
 void loop() {
-    short speed = 200;
-    
-    camera ball, home, enemy;
+    short speed = 255;
     
     robot.pixy.ccc.getBlocks();
 
@@ -55,8 +52,8 @@ void loop() {
             signature[2] = tmp;
         }
 
-        enemy.distance = 0;
-        home.distance = 0;
+//        enemy.distance = 0;
+//        home.distance = 0;
         
         ball.found = (signature[0] != -1);
         enemy.found = (signature[1] != -1);
@@ -96,7 +93,7 @@ void loop() {
         target = robot.degree;
 
     if (robot.buttonPressed(1))
-        speed = 210;
+        speed = 255;
 
     if (robot.buttonPressed(0) && robot.buttonPressed(1) && robot.setTimer(switch_update_timer, 5000)) {
         switched_goals = !switched_goals;
@@ -109,13 +106,21 @@ void loop() {
     int err_old = err; 
     int led_coef;
 
-    
-    // u = (enemy.angle) / PI * 180;
+
+     if (enemy.distance < 70) {
+        u = (enemy.angle) / PI * 180;
+        if (u > 50) 
+            u = 50;
+        if (u < -50) {
+            u = -50;
+        }
+     }
+
 
     if (!ball.found) {
         if (home.found) {
             current_angle = home.angle;
-            if (home.distance > 250) {
+            if (home.distance > 60) {
                 speed = 180;
             } else {
                 speed = 0;
@@ -170,10 +175,10 @@ void loop() {
                 
 //            if (home.found && enemy.found) {
 //                line_angle = (enemy.distance > home.distance) ? enemy.angle : home.angle;
-//            } else if (home.found) {
-//                line_angle = home.angle;
             if (home.found) {
                 line_angle = home.angle;
+//            }else if (enemy.found) {
+//                line_angle = enemy.angle;
             } else {
                 line_angle = (alpha1 + alpha2) / 2 + math.radian(180) * led_coef;
             }
@@ -247,21 +252,21 @@ void loop() {
 
     led_counter = 0;
 
-    if (robot.setTimer(serial_timer, 50)) {
+    if (robot.setTimer(serial_timer, 150)) {
         String mail = "";
-        mail = robot.createMail("u", double(u), mail);
-        mail = robot.createMail("current angle", current_angle, mail);
-        mail = robot.createMail("enemy angle", enemy.angle, mail);
+        mail = robot.createMail("home distance", home.distance, mail);
         mail = robot.createMail("enemy distance", enemy.distance, mail);
+        mail = robot.createMail("enemy angle", enemy.angle, mail);
+        mail = robot.createMail("u", double(u), mail);
         robot.sendMail(mail);
         serial_timer = millis();
     }
             
-    Serial.print(line_catched);
+    Serial.print(u);
     Serial.print(' ');
-    Serial.print(mirror_line_catched);
+    Serial.print(home.distance);
     Serial.print(' ');
-    Serial.print(mirror_exist);
+    Serial.print(enemy.distance);
     Serial.print(' ');    
     Serial.println();
     

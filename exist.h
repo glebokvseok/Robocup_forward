@@ -37,7 +37,7 @@ class Robot {
             const byte motors_in2[4] = {36, 40, 30, 5};
             const byte motors_pwm[4] = {6, 44, 10, 12};
         const byte led_digital_port[3] = {33, 35, 37};
-        int calibration_value[24] = {567, 596, 579, 588, 570, 539, 613, 677, 613, 624, 520, 620, 624, 586, 536, 584, 650, 629, 530, 635, 520, 523, 503, 546};
+        int calibration_value[24] = {542, 557, 571, 552, 549, 513, 583, 636, 568, 579, 489, 592, 592, 549, 504, 560, 622, 594, 501, 602, 499, 500, 472, 530};
             const double angle_coef = 0.785398163397448;
     public:
             int degree;
