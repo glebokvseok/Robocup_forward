@@ -17,10 +17,10 @@ struct camera {
 
 class Math {
     private:
-            const double central_x = 164;
-            const double central_y = 115;
-            const double front_x = 175; 
-            const double front_y = 116; 
+            const double central_x = 169;
+            const double central_y = 96;
+            const double front_x = 158; 
+            const double front_y = 100; 
     public:
             int sign(double x);
             double radian(double angle); 
@@ -31,13 +31,14 @@ class Math {
 
 class Robot {
     private:
+        const byte interruptor_port = 26;
             const byte left_button_port = 23;
             const byte right_button_port = 22;
             const byte motors_in1[4] = {38, 42, 28, 3};
             const byte motors_in2[4] = {36, 40, 30, 5};
             const byte motors_pwm[4] = {6, 44, 10, 12};
         const byte led_digital_port[3] = {33, 35, 37};
-        int calibration_value[24] = {542, 557, 571, 552, 549, 513, 583, 636, 568, 579, 489, 592, 592, 549, 504, 560, 622, 594, 501, 602, 499, 500, 472, 530};
+        int calibration_value[24] = {515, 520, 535, 520, 520, 486, 538, 600, 522, 539, 443, 536, 551, 508, 469, 531, 596, 563, 477, 572, 467, 477, 438, 507};
             const double angle_coef = 0.785398163397448;
     public:
             int degree;
@@ -46,6 +47,7 @@ class Robot {
         bool led_value[24];
     public:
             void init();
+        bool checkHole();
         void updateGyro();
         void sendMail(String str);
         bool buttonPressed(byte n);

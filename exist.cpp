@@ -20,15 +20,15 @@ double Math::distance(int x, int y) {
 }
 
 double Math::countDistance(double d) {
-    return ((abs(1.11333 * pow(d, 3) - 12.745 * pow(d, 2) + 52.8417 * pow(d, 1) - 5.15)) / 1000);
+    return (abs(0.0000338729 * pow(d, 4) - 0.00668456 * pow(d, 3) + 0.465768 * pow(d, 2) - 12.5714 * pow(d, 1) + 124.501));
 }
 
-double Math::countAngle(double ball_x, double ball_y) {
-   double vec_ax = this->front_x - this->central_x; 
-   double vec_ay = this->front_y - this->central_y; 
-   double vec_bx = ball_x - central_x; 
-   double vec_by = ball_y - central_y; 
-   double angle = atan2(vec_by - vec_ay, vec_bx - vec_ay);
+double Math::countAngle(double object_x, double object_y) {
+   double ax = 0; 
+   double ay = 1;
+   double bx = object_x - central_x; 
+   double by = central_y - object_y; 
+   double angle = atan2(by - ay, bx - ax);
    return angle;
 }
 
@@ -40,13 +40,11 @@ void Robot::init() {
       Serial.begin(115200);
     Serial1.begin(9600);
     Serial3.begin(115200);
-    delay(4000);     
-    Serial3.write(0XA5);
-    Serial3.write(0X54);
     delay(4000);
     Serial3.write(0XA5);
     Serial3.write(0X51);
 
+    pinMode(this->interruptor_port, INPUT);
     pinMode(this->left_button_port, INPUT_PULLUP);
     pinMode(this->right_button_port, INPUT_PULLUP);
     for (int i = 0; i < 3; ++i) {
@@ -87,6 +85,10 @@ bool Robot::buttonPressed(byte n) {
     if (n == 1)
         button_port = this->right_button_port;
         return digitalRead(button_port) == 0;
+}
+
+bool Robot::checkHole() {
+    return (digitalRead(this->interruptor_port) == 0);
 }
 
 int Robot::readChannel(int n, int m) {
@@ -161,5 +163,4 @@ void Robot::updateGyro() {
             }     
         } 
     }
-}
 }
