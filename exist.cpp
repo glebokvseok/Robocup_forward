@@ -1,7 +1,9 @@
 #include "exist.h"
 
 #include <Arduino.h>
+#include <avr/eeprom.h>
 #include <Pixy2.h>
+#include <Servo.h>
 
 int Math::sign(double x) {
    if (x >= 0) {
@@ -12,23 +14,23 @@ int Math::sign(double x) {
 }
 
 double Math::radian(double angle) {
-	return angle * PI / 180;
+	  return angle * PI / 180;
 }
 
 double Math::distance(int x, int y) {
-   return sqrt(pow(x - central_x, 2) + pow(y - central_y, 2));
+    return sqrt(pow(x - central_x, 2) + pow(y - central_y, 2));
 }
 
 double Math::countDistance(double d) {
-   return ((abs(1.11333 * pow(d, 3) - 12.745 * pow(d, 2) + 52.8417 * pow(d, 1) - 5.15)) / 1000);
+    return (abs(0.0000338729 * pow(d, 4) - 0.00668456 * pow(d, 3) + 0.465768 * pow(d, 2) - 12.5714 * pow(d, 1) + 124.501));
 }
 
-double Math::countAngle(double ball_x, double ball_y) {
-   double vec_ax = this->front_x - this->central_x; 
-   double vec_ay = this->front_y - this->central_y; 
-   double vec_bx = ball_x - central_x; 
-   double vec_by = ball_y - central_y; 
-   double angle = atan2(vec_by - vec_ay, vec_bx - vec_ay);
+double Math::countAngle(double object_x, double object_y) {
+   double ax = 0; 
+   double ay = 1;
+   double bx = object_x - central_x; 
+   double by = central_y - object_y; 
+   double angle = atan2(by - ay, bx - ax);
    return angle;
 }
 
@@ -37,20 +39,25 @@ bool Robot::setTimer(long long timer, int dt) {
 }
 
 void Robot::init() {
-	Serial.begin(115200);
+	  Serial.begin(115200);
+    Serial1.begin(9600);
     Serial3.begin(115200);
-    delay(4000);     
-    Serial3.write(0XA5);
-    Serial3.write(0X54);
+    dribler.attach(8);
+    dribler.writeMicroseconds(800);
     delay(4000);
+    dribler.writeMicroseconds(2300);
+    delay(5000);
     Serial3.write(0XA5);
     Serial3.write(0X51);
-
+    
+    pinMode(this->kicker_port, OUTPUT);
+    digitalWrite(this->kicker_port, LOW);
+    pinMode(this->interruptor_port, INPUT);
     pinMode(this->left_button_port, INPUT_PULLUP);
     pinMode(this->right_button_port, INPUT_PULLUP);
     for (int i = 0; i < 3; ++i) {
     	pinMode(this->led_digital_port[i], OUTPUT);
-		digitalWrite(this->led_digital_port[i], LOW);
+		  digitalWrite(this->led_digital_port[i], LOW);
     }
     for (int i = 0; i < 4; ++i) {
         pinMode(this->motors_pwm[i], OUTPUT);
@@ -62,17 +69,40 @@ void Robot::init() {
             this->led_angle[j * 6 + i] = (j * 6 + i) * 15 * PI / 180 - 30 * PI / 180;
         }
     }
+    for (int i = 0; i < 23; ++i) {
+        this->led_value[i] = false;
+    }
     this->led_angle[0] += 2 * PI;
     this->led_angle[1] += 2 * PI;
+    eeprom_read_block((void*)&(this->calibration_value), 20, sizeof(this->calibration_value));
+    for (int i = 0; i < 24; ++i) {
+        Serial.print(this->calibration_value[i]);
+        Serial.print(' ');
+    }
+    Serial.println();
 }
 
-bool Robot::buttonPressed(char name) {
+String Robot::createMail(String name, double value, String str) {
+    str = str + name + " = " +  String(value) + "|";
+    return str;
+}
+
+void Robot::sendMail(String str) {
+    str += "!";
+    Serial1.print(str);
+}
+
+bool Robot::buttonPressed(byte n) {
     int button_port;
-    if (name == "l")
+    if (n == 0)
         button_port = this->left_button_port;
-    if (name == "r")
+    if (n == 1)
         button_port = this->right_button_port;
 		return digitalRead(button_port) == 0;
+}
+
+bool Robot::checkHole() {
+    return (digitalRead(this->interruptor_port) == 0);
 }
 
 int Robot::readChannel(int n, int m) {
@@ -93,14 +123,23 @@ int Robot::readChannel(int n, int m) {
     return value;
 }
 
-double Robot::updateLed() {
+bool Robot::updateLed(bool led_value[]) {
+    for (int i = 0; i < 24; ++i) {
+        led_value[i] = false;
+    }
     for (int j = 0; j < 4; ++j) { 
         for (int i = 0; i < 6; ++i) { 
             if (readChannel(i, j) > this->calibration_value[j * 6 + i])
-                return led_angle[j * 6 + i];
+                led_value[j * 6 + i] = true;
         }
     }
-    return -1.0;
+    return led_value;
+}
+
+void Robot::hitBall() {
+    digitalWrite(this->kicker_port, HIGH);
+    delay(20);
+    digitalWrite(this->kicker_port, LOW);
 }
 
 void Robot::runMotor(byte port, short speed) {
@@ -111,6 +150,10 @@ void Robot::runMotor(byte port, short speed) {
         digitalWrite(this->motors_in1[port], speed > 0);
         digitalWrite(this->motors_in2[port], !(speed > 0));
         analogWrite(this->motors_pwm[port], abs(speed));
+}
+
+void Robot::runDribler(int speed) {
+    this->dribler.writeMicroseconds(speed);
 }
 
 void Robot::moveAngle(double angle, short speed, int u) {
@@ -132,8 +175,8 @@ int Robot::updateCamera(int signature[], int n) {
 }
 
 void Robot::updateGyro() {
-	unsigned char Re_buf[8];
-	long long counter = 0;
+  	unsigned char Re_buf[8];
+  	long long counter = 0;
     Serial3.write(0XA5);
     Serial3.write(0X51); //send it for each read
     while (Serial3.available()) {   
